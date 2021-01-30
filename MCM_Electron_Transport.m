@@ -17,7 +17,7 @@ nElectrons = 2e3; % Total number of electrons to simulate
 nPlotted_Electrons = 10; %Total number of electrons displayed 
 Time_Step = Height/V_thermal/100; % Time step of simulation
 Iterations = 1000; % Number of iternations to simulate
-Show_Movie = 1; %Display steps control
+Show_Movie = 0; %Display steps control
 
 % The mean free path is determined by multipling the thermal velocity 
 ... by the mean time between collisions: 
@@ -62,16 +62,14 @@ for i = 1:Iterations
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
-       Trajectories(i, (j*2):(j*2+1)) = Electron_State(j,1:2); 
+       Trajectories(i, (j):(j+1)) = Electron_State(j,1:2); 
     end
     %To calcuatle the themal energy, Maxwell's principle of equipartion 
     ... is used,  where the final equation then becomes;
     Temperature(i) = ( sum (Electron_State(:,3).^2) + sum(Electron_State(:,4).^2)) * Mass_n / k / 2 / nElectrons;
     
     %Shows the pathing of the electron, as well as the updating trajectory
-    ... Where the mod(i,n) controls the speed of updating the plot, for 
-        ...higher levelse of n the plot updates faster 
-    if Show_Movie && mod(i,5) == 0
+    if Show_Movie && mod(i,20)
        figure(1)
        subplot(1,1,1);
        hold off;
@@ -81,16 +79,34 @@ for i = 1:Iterations
        xlabel('x (nm)');
        ylabel('y (nm)');
        title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
-         
+%        subplot(2,1,2)
+%        hold on;
+%        for b = 1:nPlotted_Electrons
+%            plot(Trajectories(:,b)./1e-9, Trajectories(:,b+1)./1e-9,'-');
+%        end
+%        axis([0 Length/1e-9 0 Height/1e-9]);
+%        xlabel('x (nm)');
+%        ylabel('y (nm)');
+%        grid on;
+%        title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
     end
 end
-figure(2)
-subplot(1,1,1)
+figure("name","Trajectory and Temperature results")
+subplot(2,1,1)
+hold on;
 for i = 1:nPlotted_Electrons
-    plot(Trajectories(:,i*2)./1e-9, Trajectories(:,i*2+1)./1e-9, '-');
+    plot(Trajectories(:,i)./1e-9, Trajectories(:,i+1)./1e-9,'-');
 end
 axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
 grid on;
 title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
+
+subplot(2,1,2)
+plot(Time_Step*(0:Iterations-1), Temperature);
+axis([0 Time_Step*Iterations 299 301]);
+grid on;
+title('Temperature');
+xlabel('Time (s)');
+ylabel('Temperature (K)');

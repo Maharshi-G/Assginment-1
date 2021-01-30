@@ -4,6 +4,7 @@
 % Assignment 1
 %}
 clc; close all; clear;
+set(0, 'DefaultFigureWindowStyle', 'docked')
 %Define simulation envrionment and constants
 M0 = 9.10938356e-31; %Rest mass of electron
 Mass_n = 0.26*M0; %Effective mass of electron
@@ -17,11 +18,9 @@ nPlotted_Electrons = 10; %Total number of electrons displayed
 Time_Step = Height/V_thermal/100; % Time step of simulation
 Iterations = 1000; % Number of iternations to simulate
 Show_Movie = 0; %Display steps control
-
 % The mean free path is determined by multipling the thermal velocity 
 ... by the mean time between collisions: 
 MFP = V_thermal * 0.2e-12; %Mean free path 
-
 %The state of the electron  (postion and velocity) is stored in a array
 ... where each index refers to [x-position y-position v-in-x v-in-y]
 Electron_State = zeros(nElectrons,4);
@@ -31,12 +30,17 @@ Electron_State = zeros(nElectrons,4);
 Trajectories = zeros(Iterations,nPlotted_Electrons*2);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
+%The probabity of scattering is defined by,
+Scattering_Prob = 1 - exp(-Time_Step/0.2e-12);
+
+Velocity_PDF = makedist('Normal','mu',0,'sigma',sqrt(k*T/Mass_n));
 
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
-   angle = rand()*2*pi; %angle of trajectory
-   Electron_State(i,:) = [Length*rand() Height*rand() V_thermal*cos(angle) V_thermal*sin(angle)]; 
+   Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)]; 
 end
+%The average velocity is simply calculated as,
+Velocity_Avg = sqrt(sum(Electron_State(:,3).^2)/nElectrons + sum(Electron_State(:,4).^2)/nElectrons);
 
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
@@ -58,39 +62,62 @@ for i = 1:Iterations
            Electron_State(j,4) = -Electron_State(j,4);
        end
     end
+
+%     j = rand(nElectrons, 1) < Scattering_Prob;
+%     Electron_State(j,3:4) = random(Velocity_PDF, [sum(j),2]);
+    
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
-       Trajectories(i, (j*2):(j*2+1)) = Electron_State(j,1:2); 
+       Trajectories(i, (j):(j+1)) = Electron_State(j,1:2); 
     end
     %To calcuatle the themal energy, Maxwell's principle of equipartion 
     ... is used,  where the final equation then becomes;
     Temperature(i) = ( sum (Electron_State(:,3).^2) + sum(Electron_State(:,4).^2)) * Mass_n / k / 2 / nElectrons;
     
     %Shows the pathing of the electron, as well as the updating trajectory
-    ... Where the mod(i,n) controls the speed of updating the plot, for 
-        ...higher levelse of n the plot updates faster 
-    if Show_Movie && mod(i,5) == 0
+    if Show_Movie && mod(i,20)
        figure(1)
+       hold off;
        plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
        grid on;
        axis([0 Length/1e-9 0 Height/1e-9]);
        xlabel('x (nm)');
        ylabel('y (nm)');
        title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
+%        subplot(2,1,2)
+%        plot(Trajectories./1e-9, Trajectories./1e-9,'o');
+%        axis([0 Length/1e-9 0 Height/1e-9]);
+%        xlabel('x (nm)');
+%        ylabel('y (nm)');
+%        grid on;
+%        title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
     end
 end
-figure(2)
-subplot(1,1,1)
-grid on;
+figure("name","Trajectory, temperature and speed results results")
+subplot(3,1,1)
+hold on;
+for i = 1:nPlotted_Electrons
+    plot(Trajectories(:,i)./1e-9, Trajectories(:,i+1)./1e-9,'-');
+end
 axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
-title(sprintf("T(%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
-hold on;
-for i = 1:nPlotted_Electrons
-    plot(Trajectories(:,i*2)./1e-9, Trajectories(:,i*2+1)./1e-9, '-');
-    pause(1)
-end
-hold off;
+grid on;
+title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
 
+subplot(3,1,2)
+plot(Time_Step*(0:Iterations-1), Temperature);
+%axis([0 Time_Step*Iterations min(Temperature) max(Temperature)]);
+grid on;
+title('Temperature');
+xlabel('Time (s)');
+ylabel('Temperature (K)');
+
+subplot(3,1,3)
+Velocity = sqrt(Electron_State(:,3).^2 + Electron_State(:,4).^2);
+title("Electron Speed");
+histogram(Velocity);
+xlabel("Speed (m/s)");
+ylabel("Number of particles");
+grid on;
