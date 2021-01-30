@@ -63,9 +63,6 @@ for i = 1:Iterations
        end
     end
 
-%     j = rand(nElectrons, 1) < Scattering_Prob;
-%     Electron_State(j,3:4) = random(Velocity_PDF, [sum(j),2]);
-    
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
