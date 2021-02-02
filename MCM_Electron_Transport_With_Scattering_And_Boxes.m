@@ -17,7 +17,7 @@ nElectrons = 2e3; % Total number of electrons to simulate
 nPlotted_Electrons = 10; %Total number of electrons displayed 
 Time_Step = Height/V_thermal/100; % Time step of simulation
 Iterations = 1000; % Number of iternations to simulate
-Show_Movie = 0; %Display steps control
+Show_Movie = 1; %Display steps control
 % The mean free path is determined by multipling the thermal velocity 
 ... by the mean time between collisions: 
 MFP = V_thermal * 0.2e-12; %Mean free path 
@@ -31,12 +31,17 @@ Trajectories = zeros(Iterations,nPlotted_Electrons*2);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
 
+%Create a scattering probability
+P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
+%Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
    Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)]; 
-   
 end
+
+%Average velocity calculation
+Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:,4).^2)/nElectrons);
 
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
@@ -57,11 +62,13 @@ for i = 1:Iterations
        elseif Electron_State(j,2) < 0
            Electron_State(j,4) = -Electron_State(j,4);
        end
+
     end
     
-    
     %Add scattering
-    
+    j = rand(nElectrons,1) < P_Scatterieng;
+    Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+ 
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
@@ -82,9 +89,6 @@ for i = 1:Iterations
        ylabel('y (nm)');
        title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
        hold on;
-       for j=1:size(boxes,1)
-          plot([boxes(j,1) boxes(j,1) boxes(j,2) boxes(j,1)]./1e-9, [boxes(j,3) boxes(j,4) boxes(j,4) boxes(j,3) boxes(j,3)]./1e-9)
-       end
     end
 end
 figure("name","Trajectory, temperature and speed results results")
@@ -97,8 +101,7 @@ axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
 grid on;
-title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
-
+title(sprintf("Trajectories of (%d/%d) electron(s) at constant velocity",nPlotted_Electrons,nElectrons));
 
 subplot(3,1,2)
 plot(Time_Step*(0:Iterations-1), Temperature);
