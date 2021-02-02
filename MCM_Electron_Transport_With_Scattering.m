@@ -30,16 +30,18 @@ Electron_State = zeros(nElectrons,4);
 Trajectories = zeros(Iterations,nPlotted_Electrons*2);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
-%The probabity of scattering is defined by,
-Scattering_Prob = 1 - exp(-Time_Step/0.2e-12);
 
-
+%Create a scattering probability
+P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
+%Create a distribution using the matlab makedist function
+Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
    Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)]; 
 end
-%The average velocity is simply calculated as,
-Velocity_Avg = sqrt(sum(Electron_State(:,3).^2)/nElectrons + sum(Electron_State(:,4).^2)/nElectrons);
+
+%Average velocity calculation
+Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:,4).^2)/nElectrons);
 
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
@@ -60,11 +62,13 @@ for i = 1:Iterations
        elseif Electron_State(j,2) < 0
            Electron_State(j,4) = -Electron_State(j,4);
        end
+
     end
     
     %Add scattering
-    
-    
+    j = rand(nElectrons,1) < P_Scatterieng;
+    Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+ 
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
@@ -84,6 +88,7 @@ for i = 1:Iterations
        xlabel('x (nm)');
        ylabel('y (nm)');
        title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
+       hold on;
     end
 end
 figure("name","Trajectory, temperature and speed results results")
@@ -96,7 +101,7 @@ axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
 grid on;
-title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
+title(sprintf("Trajectories of (%d/%d) electron(s) at constant velocity",nPlotted_Electrons,nElectrons));
 
 subplot(3,1,2)
 plot(Time_Step*(0:Iterations-1), Temperature);
