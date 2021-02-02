@@ -33,7 +33,6 @@ Temperature = zeros(Iterations,1);
 %The probabity of scattering is defined by,
 Scattering_Prob = 1 - exp(-Time_Step/0.2e-12);
 
-Velocity_PDF = makedist('Normal','mu',0,'sigma',sqrt(k*T/Mass_n));
 
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
@@ -62,7 +61,10 @@ for i = 1:Iterations
            Electron_State(j,4) = -Electron_State(j,4);
        end
     end
-
+    
+    %Add scattering
+    
+    
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
@@ -82,13 +84,6 @@ for i = 1:Iterations
        xlabel('x (nm)');
        ylabel('y (nm)');
        title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
-%        subplot(2,1,2)
-%        plot(Trajectories./1e-9, Trajectories./1e-9,'o');
-%        axis([0 Length/1e-9 0 Height/1e-9]);
-%        xlabel('x (nm)');
-%        ylabel('y (nm)');
-%        grid on;
-%        title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
     end
 end
 figure("name","Trajectory, temperature and speed results results")
@@ -105,7 +100,6 @@ title(sprintf("Trajectories of (%d/%d) electron at constant velocity",nPlotted_E
 
 subplot(3,1,2)
 plot(Time_Step*(0:Iterations-1), Temperature);
-%axis([0 Time_Step*Iterations min(Temperature) max(Temperature)]);
 grid on;
 title('Temperature');
 xlabel('Time (s)');
