@@ -14,7 +14,7 @@ V_thermal = sqrt(2*k*T/Mass_n); %Thermal Veleocity
 Height = 100e-9; % The height of the simulation environment
 Length = 200e-9; % The lengthof the simulation environment
 nElectrons = 2e3; % Total number of electrons to simulate
-nPlotted_Electrons = 50; %Total number of electrons displayed 
+nPlotted_Electrons = 10; %Total number of electrons displayed 
 Time_Step = Height/V_thermal/150; % Time step of simulation
 Iterations = 1000; % Number of iternations to simulate
 Show_Movie = 1; %Display steps control
@@ -27,11 +27,11 @@ Electron_State = zeros(nElectrons,4);
 %Trajectories will be recorded in the array below, where there are 
 ... double the colums as we need both the x and y positions for each
     ... of the "to-be-plotted" electrons
-Trajectories = zeros(Iterations,nPlotted_Electrons);
+%Trajectories = zeros(Iterations,nPlotted_Electrons);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
 %Create a scattering probability
-P_Scatterieng =0; %1 - exp(-Time_Step/0.2e-12);
+P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
 
@@ -41,8 +41,6 @@ Box_Bottom_Specular = 1;
 %Create Box-positions [x1, x2, y1,y2]
 Box_pos = 1e-9.*[80 120 0 40; 80 120 60 100];
 %Create the state of the box (specular or diffusive)
-Box_state = [0 1];
-
 
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
@@ -81,10 +79,6 @@ for j=1:size(Box_pos,1)
        [Box_pos(j, 3) Box_pos(j, 4) Box_pos(j, 4) Box_pos(j, 3) Box_pos(j, 3)]./1e-9, 'k-');
 end
 hold off;
-% Electron_State((Electron_State(:,1)>40e-9 & Electron_State(:,1)<120e-9 ),1) = Electron_State((Electron_State(:,1)>40e-9 & Electron_State(:,1)<120e-9 ),1) * (Length*rand());
-% Electron_State((Electron_State(:,2)>0 & Electron_State(:,2)<40e-9),2) = Electron_State((Electron_State(:,2)>0 & Electron_State(:,2)<40e-9),2) * (Height*rand());
-% Electron_State((Electron_State(:,2)>50e-9 & Electron_State(:,2)<Height),2) = Electron_State((Electron_State(:,2)>50e-9 & Electron_State(:,2)<Height),2) * (Height*rand());
-% plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
 
 Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:,4).^2)/nElectrons);
 
@@ -95,15 +89,14 @@ for i = 1:Iterations
     ... using its current position + the velocity*(time step)
     Electron_State(:,1:2) = Electron_State(:,1:2) + Time_Step.*Electron_State(:,3:4);
     
-    %Checking boundary conditions using Matlab matrix equations 
-    
-    %Check if and move all electrons at X=200nm Bound:
+    %Checking boundary conditions using Matlab matrix equations/indenxing
+    %Check (if) and move all electrons at X=200nm Bound:
     Electron_State((Electron_State(:,1)>Length),1) = Electron_State((Electron_State(:,1)>Length),1) - Length;
  
-    %Check if and move all electrons at X=0nm Bound:
+    %Check (if) and move all electrons at X=0nm Bound:
     Electron_State((Electron_State(:,1)<0),1) =Electron_State((Electron_State(:,1)<0),1) + Length;
     
-    %Check if and move all electrons at Y Bounds and if specular or diffusive:
+    %Check (if) and move all electrons at Y Bounds and if specular or diffusive:
     if (Box_Top_Specular == 1)
        Electron_State((Electron_State(:,2)>Height),4) = -1*Electron_State((Electron_State(:,2)>Height),4) ;
     else
@@ -114,7 +107,43 @@ for i = 1:Iterations
     else
         Electron_State((Electron_State(:,2)<0),2) =  Electron_State((Electron_State(:,2)<0),2) + Height;
     end
+     j = rand(nElectrons,1) < P_Scatterieng;
+     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
     
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=79.5e-9 & Electron_State(:,2)<40e-9 ) ,3:4) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=79.5e-9 & Electron_State(:,2)<40e-9 ) ,3:4);
+    
+    Electron_State( (Electron_State(:,1)<=119e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3:4) =...
+        -Electron_State( (Electron_State(:,1)<=119e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3:4);
+    
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<=41e-9 & Electron_State(:,2)>0 ),4) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<=41e-9 & Electron_State(:,2)>0 ),4) ;
+
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=59e-9 & Electron_State(:,2)<Length ),4) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=59e-9 & Electron_State(:,2)<Length ),4);
+
+    %{
+    %Check if making contact with Bottom Box sides
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 ) ,3) =...
+       -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 ) ,3);
+    %Check if making contact with Top Box sides
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3);
+    
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>0 & Electron_State(:,2)<=40e-9 ),4) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>0 & Electron_State(:,2)<=40e-9 ),4);
+    
+    
+    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=60e-9 & Electron_State(:,2)<Length ),4) =...
+        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=60e-9 & Electron_State(:,2)<Length ),4) ;
+%}
+%========================================================================================================================================================================%
+%==============================================================Not working :(============================================================================================%
+%========================================================================================================================================================================%
+%{
     %Check if making contact with Bottom Box going Positive Vx
     Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3) =...
        -Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3);
@@ -130,23 +159,19 @@ for i = 1:Iterations
    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9...
        & Electron_State(:,3)<0) ,3) = -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & ...
        Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,3)<0) ,3);
-   
-   
-   
-%     Electron_State( (Electron_State(:,1)>0 & Electron_State(:,1)<=80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3:4) =...
-%        -1*Electron_State( (Electron_State(:,1)>0 & Electron_State(:,1)<=80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3:4);
-%     
-%     Electron_State( (Electron_State(:,1)>0 & Electron_State(:,1)<=80e-9 & Electron_State(:,2)>60e-9 & Electron_State(:,3)>0) ,3) =...
-%         -1*Electron_State( (Electron_State(:,1)>0 & Electron_State(:,1)<=80e-9 & Electron_State(:,2)>60e-9 & Electron_State(:,3)>0) ,3);
 
+%}
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
     %Add scattering
-     j = rand(nElectrons,1) < P_Scatterieng;
-     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+
  
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
-       Trajectories(i, (j):(j+1)) = Electron_State(j,1:2); 
+       Trajectories_x(i,j) = Electron_State(j,1); 
+       Trajectories_y(i,j) = Electron_State(j,2);
     end
     %To calcuatle the themal energy, Maxwell's principle of equipartion 
     ... is used,  where the final equation then becomes;
@@ -171,9 +196,8 @@ for i = 1:Iterations
 end
 figure("name","Trajectory, temperature and speed results results")
 subplot(3,1,1)
-for i = 1:nPlotted_Electrons
-    plot(Trajectories(:,i)./1e-9, Trajectories(:,i+1)./1e-9,'.');
-end
+plot(Trajectories_x(:,1:nPlotted_Electrons)./1e-9, Trajectories_y(:,1:nPlotted_Electrons)./1e-9,'.');
+
 hold on;
 for j=1:size(Box_pos,1)
    plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
