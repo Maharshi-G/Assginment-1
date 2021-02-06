@@ -13,11 +13,11 @@ k = 1.38064852e-23; % Boltzmans constant
 V_thermal = sqrt(2*k*T/Mass_n); %Thermal Veleocity
 Height = 100e-9; % The height of the simulation environment
 Length = 200e-9; % The lengthof the simulation environment
-nElectrons = 2e3; % Total number of electrons to simulate
-nPlotted_Electrons = 10; %Total number of electrons displayed 
-Time_Step = Height/V_thermal/150; % Time step of simulation
+nElectrons = 5e3; % Total number of electrons to simulate
+nPlotted_Electrons = 50; %Total number of electrons displayed 
+Time_Step = Height/V_thermal/100; % Time step of simulation
 Iterations = 1000; % Number of iternations to simulate
-Show_Movie = 1; %Display steps control
+Show_Movie =0 ; %Display steps control
 % The mean free path is determined by multipling the thermal velocity 
 ... by the mean time between collisions: 
 MFP = V_thermal * 0.2e-12; %Mean free path 
@@ -31,42 +31,26 @@ Electron_State = zeros(nElectrons,4);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
 %Create a scattering probability
-P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
+P_Scatterieng =0; %1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
 
 %Setting the top/bottom of the boxes specularity
-Box_Top_Specular = 1;
-Box_Bottom_Specular = 1;
+Top_Specular = 1;
+Bottom_Specular = 1;
 %Create Box-positions [x1, x2, y1,y2]
 Box_pos = 1e-9.*[80 120 0 40; 80 120 60 100];
 %Create the state of the box (specular or diffusive)
 
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
-   Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)];
-%    if ( (Electron_State(i,1)>80e-9 && Electron_State(i,1)<120e-9) && (Electron_State(i,2)>0 && Electron_State(i,2)<40e-9))
-%        Electron_State(i,1) = Length*rand();
-%        Electron_State(i,2) = Height*rand();
-%    elseif ( (Electron_State(i,1)>80e-9 && Electron_State(i,1)<120e-9) && (Electron_State(i,2)>60e-9 && Electron_State(i,2)<Height))
-%        Electron_State(i,1) = Length*rand();
-%        Electron_State(i,2) = Height*rand();
-%    end     
+   Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)];  
    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9),1) = Length*rand();
    Electron_State( (((Electron_State(:,2)>0 & Electron_State(:,2)<40e-9) | (Electron_State(:,2)>60e-9...
        & Electron_State(:,2)<100e-9)) & (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9)),2) = Height*rand();
-%    plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
-%    grid on;
-%    axis([0 Length/1e-9 0 Height/1e-9]);
-%    hold on;
-%     for j=1:size(Box_pos,1)
-%        plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
-%            [Box_pos(j, 3) Box_pos(j, 4) Box_pos(j, 4) Box_pos(j, 3) Box_pos(j, 3)]./1e-9, 'k-');
-%     end
-%     hold off;
 end
 
-figure(1)
+figure("Name","Electron positions")
 plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
 grid on;
 axis([0 Length/1e-9 0 Height/1e-9]);
@@ -87,6 +71,7 @@ Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:
 for i = 1:Iterations
     %The line below updates the x,y position by moving it to a new position
     ... using its current position + the velocity*(time step)
+    Electron_Prev_State = Electron_State(:,1:2);
     Electron_State(:,1:2) = Electron_State(:,1:2) + Time_Step.*Electron_State(:,3:4);
     
     %Checking boundary conditions using Matlab matrix equations/indenxing
@@ -97,76 +82,70 @@ for i = 1:Iterations
     Electron_State((Electron_State(:,1)<0),1) =Electron_State((Electron_State(:,1)<0),1) + Length;
     
     %Check (if) and move all electrons at Y Bounds and if specular or diffusive:
-    if (Box_Top_Specular == 1)
+    if (Top_Specular == 1)
        Electron_State((Electron_State(:,2)>Height),4) = -1*Electron_State((Electron_State(:,2)>Height),4) ;
+       Electron_State((Electron_State(:,2)>Height),2) = 2*Height - Electron_State((Electron_State(:,2)>Height),2);
     else
-       Electron_State((Electron_State(:,2)>Height),2) = Electron_State((Electron_State(:,2)>Height),2) - Height ;
+       Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
+       Electron_State((Electron_State(:,2)>Height),2) = random(Velocity_PDF);
     end
-    if (Box_Bottom_Specular == 1)
-        Electron_State((Electron_State(:,2)<0),4) =  -1*Electron_State((Electron_State(:,2)<0),4) ;
+    if (Bottom_Specular == 1)
+        Electron_State((Electron_State(:,2)<0),4) = -1*Electron_State((Electron_State(:,2)<0),4) ;
+        Electron_State((Electron_State(:,2)<0),2) = -Electron_State((Electron_State(:,2)<0),2);
     else
-        Electron_State((Electron_State(:,2)<0),2) =  Electron_State((Electron_State(:,2)<0),2) + Height;
+       Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
+       Electron_State((Electron_State(:,2)>Height),2) = random(Velocity_PDF);
     end
-     j = rand(nElectrons,1) < P_Scatterieng;
-     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-    
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=79.5e-9 & Electron_State(:,2)<40e-9 ) ,3:4) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=79.5e-9 & Electron_State(:,2)<40e-9 ) ,3:4);
-    
-    Electron_State( (Electron_State(:,1)<=119e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3:4) =...
-        -Electron_State( (Electron_State(:,1)<=119e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3:4);
-    
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<=41e-9 & Electron_State(:,2)>0 ),4) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<=41e-9 & Electron_State(:,2)>0 ),4) ;
-
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=59e-9 & Electron_State(:,2)<Length ),4) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=59e-9 & Electron_State(:,2)<Length ),4);
-
-    %{
-    %Check if making contact with Bottom Box sides
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 ) ,3) =...
-       -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 ) ,3);
-    %Check if making contact with Top Box sides
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>60e-9 ),3);
-    
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>0 & Electron_State(:,2)<=40e-9 ),4) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>0 & Electron_State(:,2)<=40e-9 ),4);
-    
-    
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=60e-9 & Electron_State(:,2)<Length ),4) =...
-        -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,2)>=60e-9 & Electron_State(:,2)<Length ),4) ;
-%}
-%========================================================================================================================================================================%
-%==============================================================Not working :(============================================================================================%
-%========================================================================================================================================================================%
-%{
-    %Check if making contact with Bottom Box going Positive Vx
-    Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3) =...
-       -Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)>0) ,3);
-    %Check if making contact with Bottom Box going Negative Vx
-   Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)<0) ,3) =...
-       -Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & Electron_State(:,2)<40e-9 & Electron_State(:,3)<0) ,3);
-   
-   %Check if making contact with Top Box going Postive Vx
-   Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9...
-       & Electron_State(:,3)>0) ,3) = -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & ...
-       Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,3)>0) ,3);
-   %Check if making contact with Top Box going Negative Vx
-   Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9...
-       & Electron_State(:,3)<0) ,3) = -Electron_State( (Electron_State(:,1)<=120e-9 & Electron_State(:,1)>=80e-9 & ...
-       Electron_State(:,2)>60e-9 & Electron_State(:,2)<100e-9 & Electron_State(:,3)<0) ,3);
-
-%}
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
     %Add scattering
+    j = rand(nElectrons,1) < P_Scatterieng;
+    Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+    
+    %Check if electrons bounce along the verticle sides of the box
+    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9) |...
+        (Electron_State(:,2)>60e-9 &  Electron_Prev_State(:,2)>60e-9))),3) =-Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 &...
+        ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9) |(Electron_State(:,2)>60e-9 &  Electron_Prev_State(:,2)>60e-9))),3);
+    
+    %Region 1
+    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<=40e-9)) &...
+        Electron_Prev_State(:,1)<85e-9),1) = 2*80e-9 -Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 ...
+        & ((Electron_State(:,2)<=40e-9 & Electron_Prev_State(:,2)<40e-9)) & Electron_Prev_State(:,1)<85e-9),1);
+    %Region 2
+    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<=40e-9)) &...
+        Electron_Prev_State(:,1)>120e-9),1) = 2*80e-9 - Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 ...
+        & ((Electron_State(:,2)<=40e-9 & Electron_Prev_State(:,2)<40e-9)) & Electron_Prev_State(:,1)>120e-9),1);
+    %Region 3
+    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>=60e-9)) &...
+        Electron_Prev_State(:,1)<85e-9),1) = 2*80e-9 - Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9...
+        & ((Electron_State(:,2)>=60e-9 & Electron_Prev_State(:,2)>60e-9)) & Electron_Prev_State(:,1)<85e-9),1);
+    %Region 4
+    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>=60e-9)) &...
+        Electron_Prev_State(:,1)>120e-9),1) = 2*80e-9 - Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 &...
+        ((Electron_State(:,2)>=60e-9 & Electron_Prev_State(:,2)>60e-9)) & Electron_Prev_State(:,1)>120e-9),1);
+    
+    %Check if box bounce along horizontal side of box
+    Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<40e-9 | Electron_State(:,2)>=60e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4) = -Electron_State( (Electron_State(:,1)<120e-9...
+        & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<=40e-9 | Electron_State(:,2)>=60e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4);
+    
+    Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)>=40e-9) &...
+        (Electron_State(:,4)<0)),2) =  2*40e-9 + Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
+        (Electron_State(:,2)<=40e-9 & Electron_Prev_State(:,2)>=40e-9) & (Electron_State(:,4)<0)),2);
+    
+    Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)<=60) &...
+        (Electron_State(:,4)>0)),2) =  2*80e-9 - Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
+        (Electron_State(:,2)>=60e-9 & Electron_Prev_State(:,2)<=60) &(Electron_State(:,4)>0)),2);
+    
+    %Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 
+      
 
- 
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+%========================================================================================================================================================================%
+
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
@@ -197,7 +176,6 @@ end
 figure("name","Trajectory, temperature and speed results results")
 subplot(3,1,1)
 plot(Trajectories_x(:,1:nPlotted_Electrons)./1e-9, Trajectories_y(:,1:nPlotted_Electrons)./1e-9,'.');
-
 hold on;
 for j=1:size(Box_pos,1)
    plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
@@ -208,9 +186,7 @@ axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
 grid on;
-title(sprintf("Trajectories of (%d/%d) electron(s) at constant velocity",nPlotted_Electrons,nElectrons));
-
-
+title(sprintf("Trajectories of (%.2f/%.2f) electron(s) at constant velocity",nPlotted_Electrons,nElectrons));
 subplot(3,1,2)
 plot(Time_Step*(0:Iterations-1), Temperature);
 grid on;
@@ -218,11 +194,23 @@ xlim([0 Time_Step*Iterations])
 title('Temperature of the region');
 xlabel('Time (s)');
 ylabel('Temperature (K)');
-
 subplot(3,1,3)
 Velocity = sqrt(Electron_State(:,3).^2 + Electron_State(:,4).^2);
 histogram(Velocity);
-title('Electron Speed');
+title(sprintf("Electron Velocity, Average Velocity %.2d",mean(Velocity)));
 xlabel("Speed (m/s)");
 ylabel("Number of particles");
 grid on;
+
+figure("name","Electron Density")
+X = [Electron_State(:,1) Electron_State(:,2)];
+hist3(X,'Nbins',[200 100],'CdataMode','auto')
+axis([0 Length 0 Height])
+xlabel('x (nm)')
+ylabel('y (nm)')
+colorbar
+view(2)
+title(sprintf("Electron density of (%d/%d) region",Length,Height));
+
+
+
