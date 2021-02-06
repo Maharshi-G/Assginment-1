@@ -30,14 +30,36 @@ Electron_State = zeros(nElectrons,4);
 Trajectories = zeros(Iterations,nPlotted_Electrons*2);
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
-
 %Create a scattering probability
 P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
+
+
+
+%Setting the top/bottom of the boxes specularity
+Box_Top_Specular = 1;
+Box_Bottom_Specular = 1;
+%Create Box-positions [x1, x2, y1,y2]
+Box_pos = 1e-9*[80 120 0 40; 80 120 60 100];
+%Create the state of the box (specular or 
+Box_state = [0 1];
+
+
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
-   Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)]; 
+   Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)];
+   
+   
+%    if ( ((80e-9<=Electron_State(i,1))&&(Electron_State(i,1)<=120e-9)) && ...
+%        ((0<=Electron_State(i,2))&&(Electron_State(i,2)<=40e-9)) )
+%        Electron_State(i:1) = Length*rand();
+%        Electron_State(i:2) = Height*rand();
+%    elseif ( ((80e-9<=Electron_State(i,1))&&(Electron_State(i,1)<=120e-9)) && ...
+%        ((50e-9<=Electron_State(i,2))&&(Electron_State(i,2)<=Height)) )
+%        Electron_State(i:1) = Length*rand();
+%        Electron_State(i:2) = Height*rand();
+%    end
 end
 
 %Average velocity calculation
@@ -49,25 +71,32 @@ for i = 1:Iterations
     %The line below updates the x,y position by moving it to a new position
     ... using its current position + the velocity*(time step)
     Electron_State(:,1:2) = Electron_State(:,1:2) + Time_Step.*Electron_State(:,3:4);
-
-    %Checks the boundary Conditions (if electron is at the bounds)
-    for j = 1 : nElectrons
-       if Electron_State(j,1) > Length
-           Electron_State(j,1) = Electron_State(j,1) - Length;
-       elseif Electron_State(j,1) <0
-           Electron_State(j,1) = Electron_State(j,1) + Length;
-       end
-       if Electron_State(j,2) > Height
-           Electron_State(j,4) = -Electron_State(j,4);
-       elseif Electron_State(j,2) < 0
-           Electron_State(j,4) = -Electron_State(j,4);
-       end
-
+    
+    %Checking boundary conditions using Matlab matrix equations 
+    
+    %Check if and move all electrons at X=200nm Bound:
+    Electron_State((Electron_State(:,1)>Length),1) = Electron_State((Electron_State(:,1)>Length),1) - Length;
+ 
+    %Check if and move all electrons at X=0nm Bound:
+    Electron_State((Electron_State(:,1)<0),1) =Electron_State((Electron_State(:,1)<0),1) + Length;
+    
+    %Check if and move all electrons at Y=100nm Bound:
+    if (Box_Top_Specular == 1)
+       Electron_State((Electron_State(:,2)>Height),4) = -1*Electron_State((Electron_State(:,2)>Height),4) ;
+    elseif (Box_Top_Specular == 0)
+       Electron_State((Electron_State(:,2)>Height),2) = Electron_State((Electron_State(:,2)>Height),2) - Height ;
+    end
+    if (Box_Bottom_Specular == 1)
+        Electron_State((Electron_State(:,2)<0),4) =  -1*Electron_State((Electron_State(:,2)<0),4) ;
+    elseif (Box_Bottom_Specular == 0)
+        Electron_State((Electron_State(:,2)<0),2) =  Electron_State((Electron_State(:,2)<0),2) + Height;
     end
     
+
+    
     %Add scattering
-    j = rand(nElectrons,1) < P_Scatterieng;
-    Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
+     j = rand(nElectrons,1) < P_Scatterieng;
+     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
  
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
@@ -79,7 +108,7 @@ for i = 1:Iterations
     Temperature(i) = ( sum (Electron_State(:,3).^2) + sum(Electron_State(:,4).^2)) * Mass_n / k / 2 / nElectrons;
     
     %Shows the pathing of the electron, as well as the updating trajectory
-    if Show_Movie && mod(i,20)
+    if Show_Movie && mod(i,50)
        figure(1)
        hold off;
        plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
