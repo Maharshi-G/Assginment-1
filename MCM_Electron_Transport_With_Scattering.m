@@ -10,7 +10,7 @@ M0 = 9.10938356e-31; %Rest mass of electron
 Mass_n = 0.26*M0; %Effective mass of electron
 T = 300; % Simulation envrionment temperature (K)
 k = 1.38064852e-23; % Boltzmans constant
-V_thermal = sqrt(2*k*T/Mass_n); %Thermal Veleocity
+V_thermal = sqrt(2*k*T/Mass_n) %Thermal Veleocity
 Height = 100e-9; % The height of the simulation environment
 Length = 200e-9; % The lengthof the simulation environment
 nElectrons = 2e3; % Total number of electrons to simulate
@@ -20,14 +20,11 @@ Iterations = 1000; % Number of iternations to simulate
 Show_Movie = 0; %Display steps control
 % The mean free path is determined by multipling the thermal velocity 
 ... by the mean time between collisions: 
-MFP = V_thermal * 0.2e-12; %Mean free path 
+MFP = V_thermal * 0.2e-12 %Mean free path 
 %The state of the electron  (postion and velocity) is stored in a array
 ... where each index refers to [x-position y-position v-in-x v-in-y]
 Electron_State = zeros(nElectrons,4);
-%Trajectories will be recorded in the array below, where there are 
-... double the colums as we need both the x and y positions for each
-    ... of the "to-be-plotted" electrons
-Trajectories = zeros(Iterations,nPlotted_Electrons*2);
+
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
 %Create a scattering probability
