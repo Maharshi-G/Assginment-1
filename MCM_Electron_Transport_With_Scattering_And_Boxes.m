@@ -30,14 +30,12 @@ Temperature = zeros(Iterations,1);
 P_Scatterieng =1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
-
 %Setting the top/bottom of the boxes specularity
 Top_Specular = 1;
 Bottom_Specular = 1;
 %Create Box-positions [x1, x2, y1,y2]
 Box_pos = 1e-9.*[80 120 0 40; 80 120 60 100];
 %Create the state of the box (specular or diffusive)
-
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
    Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)];  
@@ -46,23 +44,21 @@ for i = 1:nElectrons
    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ...
        (Electron_State(:,2)>40e-9)) ,1) = Length*rand();
 end
-
+%Figure below used to test inital postion of electrons, and if movie is off
+%shows the the same.
 figure("Name","Electron positions")
 plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
 grid on;
 axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
-title(sprintf("Plotting (%d/%d) electron at constant velocity",nPlotted_Electrons,nElectrons));
+title(sprintf("Plotting (%d/%d) electron ",nPlotted_Electrons,nElectrons));
 hold on;
 for j=1:size(Box_pos,1)
    plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
        [Box_pos(j, 3) Box_pos(j, 4) Box_pos(j, 4) Box_pos(j, 3) Box_pos(j, 3)]./1e-9, 'k-');
 end
 hold off;
-
-%Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:,4).^2)/nElectrons);
-
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
 for i = 1:Iterations
@@ -127,11 +123,11 @@ for i = 1:Iterations
         (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4) = -Electron_State( (Electron_State(:,1)<120e-9...
         & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<=40e-9 | Electron_State(:,2)>=60e-9) &...
         (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4);
-    
+    %Top Horizontal
     Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)>=40e-9) &...
         (Electron_State(:,4)<0)),2) =  2*40e-9 + Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
         (Electron_State(:,2)<=40e-9 & Electron_Prev_State(:,2)>=40e-9) & (Electron_State(:,4)<0)),2);
-    
+    %Bottom Horizontal
     Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)<=60) &...
         (Electron_State(:,4)>0)),2) =  2*60e-9 - Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
         (Electron_State(:,2)>=60e-9 & Electron_Prev_State(:,2)<=60) &(Electron_State(:,4)>0)),2);
