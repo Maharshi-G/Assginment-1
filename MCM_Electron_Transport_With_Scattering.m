@@ -3,6 +3,7 @@
 % ELEC 4700 - Modeling of Integrated Devices
 % Assignment 1
 %}
+%%
 clc; close all; clear;
 set(0, 'DefaultFigureWindowStyle', 'docked')
 %Define simulation envrionment and constants
@@ -24,30 +25,24 @@ MFP = V_thermal * 0.2e-12 %Mean free path
 %The state of the electron  (postion and velocity) is stored in a array
 ... where each index refers to [x-position y-position v-in-x v-in-y]
 Electron_State = zeros(nElectrons,4);
-
+%Setting the top/bottom of the boxes specularity
+Top_Specular = 0;
+Bottom_Specular = 1;
 %Temperature will be recorded in the array below
 Temperature = zeros(Iterations,1);
 %Create a scattering probability
 P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
-
-%Setting the top/bottom of the boxes specularity
-Top_Specular = 0;
-Bottom_Specular = 1;
-
-
 %Generate a random inital population postion and velocity
 for i = 1:nElectrons
    Electron_State(i,:) = [Length*rand() Height*rand() random(Velocity_PDF) random(Velocity_PDF)];
 end
-
-%Average velocity calculation
-Average_Velocity = sqrt ((Electron_State(:,3).^2)/nElectrons + (Electron_State(:,4).^2)/nElectrons);
-
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
+%%
 for i = 1:Iterations
+    %%
     %The line below updates the x,y position by moving it to a new position
     ... using its current position + the velocity*(time step)
     Electron_State(:,1:2) = Electron_State(:,1:2) + Time_Step.*Electron_State(:,3:4);
@@ -75,6 +70,7 @@ for i = 1:Iterations
        Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
        Electron_State((Electron_State(:,2)>Height),3) = random(Velocity_PDF);
     end
+    %%
     %Add scattering
     j = rand(nElectrons,1) < P_Scatterieng;
     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
@@ -102,6 +98,7 @@ for i = 1:Iterations
        hold on;
     end
 end
+%%
 figure("name","Trajectory, temperature and speed results results")
 subplot(3,1,1)
 hold on;
@@ -128,3 +125,4 @@ title(sprintf("Electron Velocity, Average Velocity: %.2d",mean(Velocity)));
 xlabel("Speed (m/s)");
 ylabel("Number of particles");
 grid on;
+saveas(gcf,'Part_Two_Simulation_Results.png')

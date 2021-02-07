@@ -30,9 +30,12 @@ Temperature = zeros(Iterations,1);
 P_Scatterieng =1 - exp(-Time_Step/0.2e-12);
 %Create a distribution using the matlab makedist function
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
-%Setting the top/bottom of the boxes specularity
+%Setting the top/bottom of the boudnary specularity
 Top_Specular = 1;
 Bottom_Specular = 1;
+%Set the box characteristics (0 = diffusive)
+Top_Box_Specular = 1;
+Bottom_Box_Specular = 1;
 %Create Box-positions [x1, x2, y1,y2]
 Box_pos = 1e-9.*[80 120 0 40; 80 120 60 100];
 %Create the state of the box (specular or diffusive)
@@ -53,6 +56,7 @@ axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
 title(sprintf("Plotting (%d/%d) electron ",nPlotted_Electrons,nElectrons));
+saveas(gcf,'Part_Three_Boxes.png')
 hold on;
 for j=1:size(Box_pos,1)
    plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
@@ -89,18 +93,56 @@ for i = 1:Iterations
        Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
        Electron_State((Electron_State(:,2)>Height),3) = random(Velocity_PDF);
     end
+
+%%
+    %BOX SPECULAR CASE :
+    %Check if bottom Box is specular and if so then bounce 
+    Electron_State( (Bottom_Box_Specular==1 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9))),3)...
+        =-Electron_State( (Bottom_Box_Specular==1 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & ...
+        Electron_Prev_State(:,2)<40e-9))),3);
+    %Check if top Box is specular and if so then bounce 
+    Electron_State( (Top_Box_Specular==1 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>60e-9))),3)...
+        =-Electron_State( (Top_Box_Specular==1 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>60e-9))),3);
+
+    %Top Horizontal
+    Electron_State( (Top_Box_Specular==1 & Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)>60e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4) = -Electron_State( (Top_Box_Specular==1 & Electron_State(:,1)<120e-9...
+        & Electron_State(:,1)>80e-9) & (Electron_State(:,2)>60e-9) &(Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4);
+    %Bottom Hoizontal
+    Electron_State( (Bottom_Box_Specular==1 & Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)<40e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4) = -Electron_State( (Bottom_Box_Specular==1 & Electron_State(:,1)<120e-9...
+            & Electron_State(:,1)>80e-9) & (Electron_State(:,2)<40e-9) &(Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4);
+    %BOX SPECULAR CASE END :
+%%
+    %BOX DIFFUSIVE CASE:
+    %Check if bottom Box is specular and if so then bounce 
+    Electron_State( (Bottom_Box_Specular==0 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9))),3)...
+        =random(Velocity_PDF);
+    Electron_State( (Bottom_Box_Specular==0 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9))),4)...
+        =random(Velocity_PDF);
+    
+    %Check if Top Box is specular and if so then bounce 
+    Electron_State( (Top_Box_Specular==0 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>60e-9))),3)...
+        =random(Velocity_PDF);
+    Electron_State( (Top_Box_Specular==0 & Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>60e-9))),4)...
+        =random(Velocity_PDF);
+
+    %Bottom Horizontal
+    Electron_State( (Bottom_Box_Specular==0 & Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)<40e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),3) = random(Velocity_PDF);
+    Electron_State( (Bottom_Box_Specular==0 & Electron_State(:,1)<120e-9 & Electron_State(:,4)<0 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)<40e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4) = random(Velocity_PDF);
+    %Top Hoizontal
+    Electron_State( (Top_Box_Specular==0  & Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)>60e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),3) = random(Velocity_PDF);
+    Electron_State( (Top_Box_Specular==0 & Electron_State(:,4)>0 & Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9) & (Electron_State(:,2)>60e-9) &...
+        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9),4) = -random(Velocity_PDF);
+%%
     %Add scattering
     j = rand(nElectrons,1) < P_Scatterieng;
     Electron_State(j,3:4) = random(Velocity_PDF,[sum(j),2]);
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-    
-    %Check if electrons bounce along the verticle sides of the box
-    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9) |...
-        (Electron_State(:,2)>60e-9 &  Electron_Prev_State(:,2)>60e-9))),3) =-Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 &...
-        ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<40e-9) |(Electron_State(:,2)>60e-9 &  Electron_Prev_State(:,2)>60e-9))),3);
-    
+%%
+    %Electron shifting
     %Region 1
     Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ((Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)<=40e-9)) &...
         Electron_Prev_State(:,1)<=80e-9),1) = 2*80e-9 -Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 ...
@@ -118,11 +160,6 @@ for i = 1:Iterations
         Electron_Prev_State(:,1)>120e-9),1) = 2*120e-9 - Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 &...
         ((Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)>=60e-9)) & Electron_Prev_State(:,1)>120e-9),1);
     
-    %Check if box bounce along horizontal side of box
-    Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<40e-9 | Electron_State(:,2)>=60e-9) &...
-        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4) = -Electron_State( (Electron_State(:,1)<120e-9...
-        & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<=40e-9 | Electron_State(:,2)>=60e-9) &...
-        (Electron_Prev_State(:,1)>80e-9 & Electron_Prev_State(:,1)<120e-9)),4);
     %Top Horizontal
     Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)<40e-9 & Electron_Prev_State(:,2)>=40e-9) &...
         (Electron_State(:,4)<0)),2) =  2*40e-9 + Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
@@ -131,11 +168,8 @@ for i = 1:Iterations
     Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 & (Electron_State(:,2)>60e-9 & Electron_Prev_State(:,2)<=60) &...
         (Electron_State(:,4)>0)),2) =  2*60e-9 - Electron_State( (Electron_State(:,1)<120e-9 & Electron_State(:,1)>80e-9 &...
         (Electron_State(:,2)>=60e-9 & Electron_Prev_State(:,2)<=60) &(Electron_State(:,4)>0)),2);
-
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-%========================================================================================================================================================================%
-
+    %Electron shifting end
+%%
     % Stores the Electron [x y] posistions in the Trajectories vector
     ... for each different electron in a new coloum
     for j = 1: nPlotted_Electrons
@@ -163,6 +197,7 @@ for i = 1:Iterations
        hold off;
     end
 end
+%%
 figure("name","Trajectory, temperature and speed results results")
 subplot(3,1,1)
 plot(Trajectories_x(:,1:nPlotted_Electrons)./1e-9, Trajectories_y(:,1:nPlotted_Electrons)./1e-9,'.');
@@ -171,7 +206,7 @@ for j=1:size(Box_pos,1)
    plot([Box_pos(j, 1) Box_pos(j, 1) Box_pos(j, 2) Box_pos(j, 2) Box_pos(j, 1)]./1e-9,...
        [Box_pos(j, 3) Box_pos(j, 4) Box_pos(j, 4) Box_pos(j, 3) Box_pos(j, 3)]./1e-9, 'k-');
 end
-hold off;
+hold off
 axis([0 Length/1e-9 0 Height/1e-9]);
 xlabel('x (nm)');
 ylabel('y (nm)');
@@ -192,14 +227,85 @@ xlabel("Speed (m/s)");
 ylabel("Number of particles");
 grid on;
 
+
+%% 
+%Create density maps for the electrons and temperature
+%Density without filtering :
 figure("name","Electron Density")
 X = [Electron_State(:,1) Electron_State(:,2)];
 hist3(X,'Nbins',[200 100],'CdataMode','auto')
 axis([0 Length 0 Height])
 xlabel('x (nm)')
 ylabel('y (nm)')
-colorbar
+colormap;
+c = colorbar;
+c.Label.String = 'Electron density';
 view(2)
 title(sprintf("Electron density of %d electrons",nElectrons));
+saveas(gcf,'Part_Three_Electron_Density.png')
+%With Guassian filtering :
+Density = hist3(Electron_State(:,1:2),[200 100])';
+N = 20;
+sigma = 3;
+%Creating a Gaussian filtering matrix
+[x,y]=meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
+F=exp(-x.^2/(2*sigma^2)-y.^2/(2*sigma^2));
+F=F./sum(F(:));
 
+figure("name","Electron Density (with Gaussian filtering)")
+imagesc(conv2(Density,F,'same'))
+xlabel('x (nm)')
+ylabel('y (nm)')
+c = colorbar;
+c.Label.String = 'Density';
+view(2)
+title(sprintf("Electron density of %d electrons",nElectrons));
+saveas(gcf,'Part_Three_Electron_Density_Filtered.png')
+%For the temperature density plot the electrons positions were binned
+Temperature_Sum_X = zeros(ceil(Length/1e-9),ceil(Height/1e-9));
+Temperature_Sum_Y = zeros(ceil(Length/1e-9),ceil(Height/1e-9));
+Temperature_Bin_Count = zeros(ceil(Length/1e-9),ceil(Height/1e-9));
 
+% Look at velocities of all the particles
+for i=1:nElectrons
+    % bin the electrons
+    x = floor(Electron_State(i,1)./1e-9);
+    y = floor(Electron_State(i,2)./1e-9);
+    if(x==0)
+        x = 1;
+    end
+    if(y==0)
+        y= 1;
+    end
+    % Add velocity components
+    Temperature_Sum_X(x,y) = Temperature_Sum_X(x,y) + Electron_State(i,4)^2;
+    Temperature_Sum_Y(x,y) = Temperature_Sum_Y(x,y) + Electron_State(i,3)^2;
+    Temperature_Bin_Count(x,y) = Temperature_Bin_Count(x,y) + 1;
+end
+
+% Now, with the velocities added up, calculate the temperatures:
+TemperatureDensity = (Temperature_Sum_X + Temperature_Sum_Y).*Mass_n./k./2./Temperature_Bin_Count;
+%If somewhere in the calculation the density beame nan then make it 0
+TemperatureDensity(isnan(TemperatureDensity)) = 0;
+%Transpose the matrix
+TemperatureDensity = TemperatureDensity';
+
+figure("Name","Electron heat denstiy")
+imagesc(TemperatureDensity)
+set(gca,'YDir','normal');
+title('Temperature Map');
+c = colorbar;
+c.Label.String = 'Temperature';
+xlabel('x (nm)');
+ylabel('y (nm)');
+
+figure("Name","electron heat density (with Gaussian filtering)");
+imagesc(conv2(TemperatureDensity,F,'same'));
+set(gca,'YDir','normal');
+title('Temperature Map');
+c = colorbar;
+c.Label.String = 'Temperature (K)';
+xlabel('x (nm)');
+ylabel('y (nm)');
+
+saveas(gcf,'Part_Three_Heat_Map_Filtered.png')
