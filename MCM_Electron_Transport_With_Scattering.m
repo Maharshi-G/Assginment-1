@@ -33,7 +33,7 @@ P_Scatterieng = 1 - exp(-Time_Step/0.2e-12);
 Velocity_PDF = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/Mass_n));
 
 %Setting the top/bottom of the boxes specularity
-Top_Specular = 1;
+Top_Specular = 0;
 Bottom_Specular = 1;
 
 
@@ -65,15 +65,15 @@ for i = 1:Iterations
        Electron_State((Electron_State(:,2)>Height),4) = -1*Electron_State((Electron_State(:,2)>Height),4) ;
        Electron_State((Electron_State(:,2)>Height),2) = 2*Height - Electron_State((Electron_State(:,2)>Height),2);
     else
-       Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
-       Electron_State((Electron_State(:,2)>Height),2) = random(Velocity_PDF);
+       Electron_State((Electron_State(:,2)>Height),4) = -random(Velocity_PDF);
+       Electron_State((Electron_State(:,2)>Height),3) = random(Velocity_PDF);
     end
     if (Bottom_Specular == 1)
         Electron_State((Electron_State(:,2)<0),4) = -1*Electron_State((Electron_State(:,2)<0),4) ;
         Electron_State((Electron_State(:,2)<0),2) = -Electron_State((Electron_State(:,2)<0),2);
     else
        Electron_State((Electron_State(:,2)>Height),4) = random(Velocity_PDF);
-       Electron_State((Electron_State(:,2)>Height),2) = random(Velocity_PDF);
+       Electron_State((Electron_State(:,2)>Height),3) = random(Velocity_PDF);
     end
     %Add scattering
     j = rand(nElectrons,1) < P_Scatterieng;
@@ -93,7 +93,7 @@ for i = 1:Iterations
     if Show_Movie && mod(i,50)
        figure(1)
        hold off;
-       plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'-');
+       plot(Electron_State(1:nPlotted_Electrons,1)./1e-9,Electron_State(1:nPlotted_Electrons,2)./1e-9,'o');
        grid on;
        axis([0 Length/1e-9 0 Height/1e-9]);
        xlabel('x (nm)');
@@ -117,14 +117,14 @@ subplot(3,1,2)
 plot(Time_Step*(0:Iterations-1), Temperature);
 grid on;
 xlim([0 Time_Step*Iterations])
-title('Temperature of the region');
+title(sprintf("Temperature of the region, Average Temperature: %.2f",mean(Temperature)))
 xlabel('Time (s)');
 ylabel('Temperature (K)');
 
 subplot(3,1,3)
 Velocity = sqrt(Electron_State(:,3).^2 + Electron_State(:,4).^2);
 histogram(Velocity);
-title(sprintf("Electron Velocity, Average Velocity %.2d",mean(Velocity)));
+title(sprintf("Electron Velocity, Average Velocity: %.2d",mean(Velocity)));
 xlabel("Speed (m/s)");
 ylabel("Number of particles");
 grid on;
