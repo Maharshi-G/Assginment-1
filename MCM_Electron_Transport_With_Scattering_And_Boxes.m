@@ -45,7 +45,7 @@ for i = 1:nElectrons
    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ...
        (Electron_State(:,2)<40e-9)) ,1) = Length*rand();
    Electron_State( (Electron_State(:,1)>80e-9 & Electron_State(:,1)<120e-9 & ...
-       (Electron_State(:,2)>40e-9)) ,1) = Length*rand();
+       (Electron_State(:,2)>60e-9)) ,1) = Length*rand();
 end
 %Figure below used to test inital postion of electrons, and if movie is off
 %shows the the same.
@@ -63,6 +63,7 @@ for j=1:size(Box_pos,1)
        [Box_pos(j, 3) Box_pos(j, 4) Box_pos(j, 4) Box_pos(j, 3) Box_pos(j, 3)]./1e-9, 'k-');
 end
 hold off;
+saveas(gcf,'Part_Three_Boxes.png')
 %We will now move (iterate) over time, updating the positions and direction
 ...while plotting the state
 for i = 1:Iterations
@@ -249,11 +250,11 @@ N = 20;
 sigma = 3;
 %Creating a Gaussian filtering matrix
 [x,y]=meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
-F=exp(-x.^2/(2*sigma^2)-y.^2/(2*sigma^2));
-F=F./sum(F(:));
+G=exp(-x.^2/(2*sigma^2)-y.^2/(2*sigma^2));
+G=G./sum(G(:));
 
 figure("name","Electron Density (with Gaussian filtering)")
-imagesc(conv2(Density,F,'same'))
+imagesc(conv2(Density,G,'same'))
 xlabel('x (nm)')
 ylabel('y (nm)')
 c = colorbar;
@@ -300,7 +301,7 @@ xlabel('x (nm)');
 ylabel('y (nm)');
 
 figure("Name","electron heat density (with Gaussian filtering)");
-imagesc(conv2(TemperatureDensity,F,'same'));
+imagesc(conv2(TemperatureDensity,G,'same'));
 set(gca,'YDir','normal');
 title('Temperature Map');
 c = colorbar;
